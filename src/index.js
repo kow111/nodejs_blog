@@ -1,28 +1,34 @@
-const path = require("path");
-const express = require("express");
-const morgan = require("morgan");
-const handlebars = require("express-handlebars");
+const path = require('path');
+const express = require('express');
+const morgan = require('morgan');
 const app = express();
 const port = 3000;
 
-app.use(morgan("combined"));
-app.use(express.static(path.join(__dirname, "public")));
+require('dotenv').config();
 
-app.engine(
-  "hbs",
-  handlebars.engine({
-    extname: ".hbs",
-  })
-);
-app.set("view engine", "hbs");
-app.set("views", path.join(__dirname, "resources/views"));
+const productRouter = require('../api/routes/products');
+const orderRouter = require('../api/routes/order');
 
-app.get("/", (req, res) => {
-  res.render("home");
+app.use(morgan('dev'));
+
+app.use('/products', productRouter);
+app.use('/orders', orderRouter);
+
+app.use((req, res, next) => {
+  const error = new Error('Not found');
+  error.status = 404;
+  next(error);
 });
-app.get("/news", (req, res) => {
-  res.render("news");
+
+app.use((error, req, res, next) => {
+  res.status(error.status || 500);
+  res.json({
+    error: {
+      message: error.message,
+    },
+  });
 });
+
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);
 });
